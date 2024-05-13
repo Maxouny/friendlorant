@@ -20,7 +20,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		// TODO: Validate token
+		// Validate token
 		tokenString := strings.Split(tokenHeader, " ")[1]
 		token, err := utils.ParseToken(tokenString)
 		if err != nil {

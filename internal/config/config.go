@@ -1,38 +1,29 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"log"
+
+	"github.com/joho/godotenv"
+)
 
 type Config struct {
 	Server struct {
-		Port string `mapstructure:"port"`
-	} `mapstructure:"server"`
+		Port string `env:"PORT" env-default:"8080"`
+	}
 	Database struct {
-		DSN string `mapstructure:"dsn"`
-	} `mapstructure:"database"`
+		URL string `env:"DATABASE_URL"`
+	}
 	JWT struct {
-		Secret string `mapstructure:"secret"`
-	} `mapstructure:"jwt"`
+		Secret string `env:"JWT_SECRET"`
+	}
 }
 
 func LoadConfig() *Config {
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath(".")
-	viper.AutomaticEnv()
-
 	var cfg Config
 
-	viper.SetEnvPrefix("FRIENDLORANT")
-	viper.BindEnv("Server.Port")
-	viper.BindEnv("Database.DNS")
-	viper.BindEnv("JWT.Secret")
-
-	if err := viper.ReadInConfig(); err != nil {
-		panic(err)
+	if err := godotenv.Load(); err != nil {
+		log.Print("No .env file found")
 	}
 
-	if err := viper.Unmarshal(&cfg); err != nil {
-		panic(err)
-	}
 	return &cfg
 }

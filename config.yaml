@@ -1,8 +1,0 @@
-server:
-  port: 8080
-
-database:
-  dsn: postgres://postgres:postgres@postgres:5432/friendlorant?sslmode=disable
-
-jwt:
-  secret: "secret"

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"time"
 
 	"friendlorant/internal/models"
 	"friendlorant/internal/repositories"
@@ -61,6 +62,16 @@ func (uc *UserController) Register(c *gin.Context) {
 	}
 
 	user.Token = token
+
+	user.TokenExpire = time.Now().Add(time.Hour * 24)
+
+	if err := uc.userRepo.CreateUser(c, &user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to create user",
+		})
+		return
+	}
+
 	c.JSON(http.StatusCreated, user)
 }
 

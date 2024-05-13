@@ -8,14 +8,14 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-var jwtSecret = []byte(config.LoadConfig().JWT.Secret)
-
 type JWTClaims struct {
 	UserID uint `json:"user_id"`
 	jwt.StandardClaims
 }
 
 func GenerateToken(userID uint) (string, error) {
+	cfg := config.LoadConfig()
+
 	claims := &JWTClaims{
 		UserID: userID,
 		StandardClaims: jwt.StandardClaims{
@@ -27,7 +27,7 @@ func GenerateToken(userID uint) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString(jwtSecret)
+	signedToken, err := token.SignedString([]byte(cfg.JWT.Secret))
 	if err != nil {
 		return "", err
 	}
@@ -35,8 +35,10 @@ func GenerateToken(userID uint) (string, error) {
 }
 
 func ParseToken(tokenString string) (*jwt.Token, error) {
+	cfg := config.LoadConfig()
+
 	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return jwtSecret, nil
+		return []byte(cfg.JWT.Secret), nil
 	})
 	if err != nil {
 		return nil, err

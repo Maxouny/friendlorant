@@ -9,7 +9,7 @@ type User struct {
 	Email       string    `json:"email"`
 	Token       string    `json:"token"`
 	Image       string    `json:"image"`
-	ValorantID  string    `json:"valorant_id"`
+	ValorantID  int       `json:"valorant_id"`
 	UserRating  int       `json:"user_rating"`
 	TokenExpire time.Time `json:"token_expire"`
 	CreatedAt   time.Time `json:"created_at"`

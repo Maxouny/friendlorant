@@ -2,7 +2,7 @@ build:
 	@go build -o bin/friendlorant
 
 run:
-	@./bin/friendlorant
+	@./bin/friendlorant/cmd/main.go
 
 test:
 	@go test -v ./...

@@ -1,21 +1,22 @@
 version: '3.8'
-
 services:
+
   postgres:
+    container_name: postgres_container
     image: postgres:16
-    restart: always
-    ports:
-      - "5432:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: friendlorant
-
-  app:
-    build: .
+      PGDATA: /data/postgres
     ports:
-      - "8080:8080"
-    depends_on:
+      - "5432:5432"
+    networks:
       - postgres
-    environment:
-      AUTH_DATABASE_DSN: "postgres://postgres:postgres@postgres:5432/friendlorant?sslmode=disable"
+    restart: unless-stopped
+
+networks:
+  postgres:
+    driver: bridge
+
+volumes:
+  postgres:

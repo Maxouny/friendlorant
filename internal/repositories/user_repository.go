@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"friendlorant/internal/models"
 )
@@ -30,7 +31,7 @@ func (ur *userRepository) CreateUser(ctx context.Context, user *models.User) err
 	err := ur.db.QueryRowContext(ctx, query, user.Username, user.Password, user.Email, user.Image, user.ValorantID, user.UserRating, user.TokenExpire, user.CreatedAt, user.UpdatedAt).
 		Scan(&user.ID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create user: %v", err)
 	}
 	return nil
 }
