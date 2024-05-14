@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"time"
 
 	"friendlorant/internal/config"
@@ -14,7 +15,10 @@ type JWTClaims struct {
 }
 
 func GenerateToken(userID uint) (string, error) {
-	cfg := config.LoadConfig()
+	envCfg, err := config.LoadEnvConfig()
+	if err != nil {
+		return "", fmt.Errorf("failed to load config: %v", err)
+	}
 
 	claims := &JWTClaims{
 		UserID: userID,
@@ -27,7 +31,7 @@ func GenerateToken(userID uint) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString([]byte(cfg.JWT.Secret))
+	signedToken, err := token.SignedString([]byte(envCfg.JWT))
 	if err != nil {
 		return "", err
 	}
@@ -35,10 +39,13 @@ func GenerateToken(userID uint) (string, error) {
 }
 
 func ParseToken(tokenString string) (*jwt.Token, error) {
-	cfg := config.LoadConfig()
+	envCfg, err := config.LoadEnvConfig()
+	if err != nil {
+		return nil, err
+	}
 
 	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(cfg.JWT.Secret), nil
+		return []byte(envCfg.JWT), nil
 	})
 	if err != nil {
 		return nil, err

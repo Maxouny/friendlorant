@@ -9,6 +9,7 @@ import (
 	"friendlorant/internal/utils"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 type UserController struct {
@@ -30,13 +31,13 @@ func (uc *UserController) Register(c *gin.Context) {
 	}
 
 	// field validation
-	if user.Username == "" || user.Password == "" || user.Email == "" {
+	if err := validateUser(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Missing required fields",
+			"error": err.Error(),
 		})
 		return
 	}
-	// hased pass
+
 	hashedPassword, err := utils.HashPassword(user.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -45,13 +46,6 @@ func (uc *UserController) Register(c *gin.Context) {
 		return
 	}
 	user.Password = hashedPassword
-
-	if err := uc.userRepo.CreateUser(c, &user); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to create user",
-		})
-		return
-	}
 
 	token, err := utils.GenerateToken(user.ID)
 	if err != nil {
@@ -125,4 +119,12 @@ func (uc *UserController) UpdateUser(c *gin.Context) {
 
 func (uc *UserController) DeleteUser(c *gin.Context) {
 	// Реализация обработчика удаления пользователя
+}
+
+func validateUser(user *models.User) error {
+	validate := validator.New()
+	if err := validate.Struct(user); err != nil {
+		return err
+	}
+	return nil
 }

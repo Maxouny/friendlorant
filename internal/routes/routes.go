@@ -1,19 +1,14 @@
-package router
+package routes
 
 import (
 	"friendlorant/internal/controllers"
-	"friendlorant/internal/middleware"
-	"friendlorant/internal/repositories"
 
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(r *gin.Engine, userRepo repositories.UserRepository) {
-	r.Use(middleware.AuthMiddleware())
-
+func SetupRouter(r *gin.Engine, userController *controllers.UserController) {
 	v1 := r.Group("/api/v1")
 	{
-		userController := controllers.NewUserController(userRepo)
 
 		// TODO: getAllusers,
 

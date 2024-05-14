@@ -2,10 +2,11 @@ package repositories
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"friendlorant/internal/models"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type UserRepository interface {
@@ -17,18 +18,20 @@ type UserRepository interface {
 }
 
 type userRepository struct {
-	db *sql.DB
+	pgx *pgx.Conn
 }
 
-func NewUserRepository(db *sql.DB) UserRepository {
-	return &userRepository{db: db}
+func NewUserRepository(pgx *pgx.Conn) UserRepository {
+	return &userRepository{
+		pgx: pgx,
+	}
 }
 
 func (ur *userRepository) CreateUser(ctx context.Context, user *models.User) error {
 	query := `INSERT INTO users
 	(username, password, email, image, valorant_id, user_rating, token_expire, created_at, updated_at)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`
-	err := ur.db.QueryRowContext(ctx, query, user.Username, user.Password, user.Email, user.Image, user.ValorantID, user.UserRating, user.TokenExpire, user.CreatedAt, user.UpdatedAt).
+	err := ur.pgx.QueryRow(ctx, query, user.Username, user.Password, user.Email, user.Image, user.ValorantID, user.UserRating, user.TokenExpire, user.CreatedAt, user.UpdatedAt).
 		Scan(&user.ID)
 	if err != nil {
 		return fmt.Errorf("failed to create user: %v", err)
@@ -40,7 +43,7 @@ func (ur *userRepository) GetUserByID(ctx context.Context, id uint) (*models.Use
 	var user models.User
 
 	query := `SELECT * FROM users WHERE id = $1`
-	err := ur.db.QueryRowContext(ctx, query, id).
+	err := ur.pgx.QueryRow(ctx, query, id).
 		Scan(&user.ID, &user.Username, &user.Password, &user.Email, &user.Image, &user.ValorantID, &user.UserRating, &user.Token, &user.TokenExpire, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
@@ -51,7 +54,7 @@ func (ur *userRepository) GetUserByID(ctx context.Context, id uint) (*models.Use
 func (ur *userRepository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
 	query := `SELECT * FROM users WHERE email = $1`
-	err := ur.db.QueryRowContext(ctx, query, email).
+	err := ur.pgx.QueryRow(ctx, query, email).
 		Scan(&user.ID, &user.Username, &user.Password, &user.Email, &user.Image, &user.ValorantID, &user.UserRating, &user.Token, &user.TokenExpire, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
@@ -61,7 +64,7 @@ func (ur *userRepository) GetUserByEmail(ctx context.Context, email string) (*mo
 
 func (ur *userRepository) UpdateUser(ctx context.Context, user *models.User) error {
 	query := `UPDATE users SET username = $1, password = $2, email = $3, image = $4, valorant_id = $5, user_rating = $6, token_expire = $7, updated_at = $8 WHERE id = $9`
-	_, err := ur.db.ExecContext(ctx, query, user.Username, user.Password, user.Email, user.Image, user.ValorantID, user.UserRating, user.TokenExpire, user.UpdatedAt, user.ID)
+	_, err := ur.pgx.Exec(ctx, query, user.Username, user.Password, user.Email, user.Image, user.ValorantID, user.UserRating, user.TokenExpire, user.UpdatedAt, user.ID)
 	if err != nil {
 		return err
 	}
@@ -70,7 +73,7 @@ func (ur *userRepository) UpdateUser(ctx context.Context, user *models.User) err
 
 func (ur *userRepository) DeleteUser(ctx context.Context, id uint) error {
 	query := `DELETE FROM users WHERE id = $1`
-	_, err := ur.db.ExecContext(ctx, query, id)
+	_, err := ur.pgx.Exec(ctx, query, id)
 	if err != nil {
 		return err
 	}

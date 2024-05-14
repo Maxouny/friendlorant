@@ -21,7 +21,15 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 		// Validate token
-		tokenString := strings.Split(tokenHeader, " ")[1]
+		parts := strings.Split(tokenHeader, " ")
+		if len(parts) != 2 {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Invalid authorization header format",
+			})
+			c.Abort()
+			return
+		}
+		tokenString := parts[1]
 		token, err := utils.ParseToken(tokenString)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{

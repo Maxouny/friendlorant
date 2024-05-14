@@ -1,29 +1,40 @@
 package config
 
 import (
-	"log"
+	"fmt"
 
-	"github.com/joho/godotenv"
+	"github.com/ilyakaznacheev/cleanenv"
 )
 
-type Config struct {
-	Server struct {
-		Port string `env:"PORT" env-default:"8080"`
-	}
-	Database struct {
-		URL string `env:"DATABASE_URL"`
-	}
-	JWT struct {
-		Secret string `env:"JWT_SECRET"`
-	}
+type ENVConfig struct {
+	Host string `env:"LOCAL_HOST" env-default:"localhost"`
+	Port string `env:"LOCAL_PORT" env-default:"8080"`
+	JWT  string `env:"JWT_SECRET" env-default:"secret"`
 }
 
-func LoadConfig() *Config {
-	var cfg Config
+type DBConfig struct {
+	// TODO: postgres
+	Host     string `env:"DB_HOST" env-default:"localhost"`
+	Port     string `env:"DB_PORT" env-default:"5432"`
+	Name     string `env:"DB_NAME" env-default:"postgres"`
+	User     string `env:"DB_USER" env-default:"postgres"`
+	Password string `env:"DB_PASSWORD" env-default:"postgres"`
+}
 
-	if err := godotenv.Load(); err != nil {
-		log.Print("No .env file found")
+func LoadDBConfig() (*DBConfig, error) {
+	var cfg DBConfig
+
+	if err := cleanenv.ReadEnv(&cfg); err != nil {
+		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
+	return &cfg, nil
+}
 
-	return &cfg
+func LoadEnvConfig() (*ENVConfig, error) {
+	var cfg ENVConfig
+
+	if err := cleanenv.ReadEnv(&cfg); err != nil {
+		return nil, fmt.Errorf("failed to load config: %w", err)
+	}
+	return &cfg, nil
 }

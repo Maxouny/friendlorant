@@ -1,15 +1,18 @@
 version: '3.8'
-services:
 
+services:
   postgres:
-    container_name: postgres_container
     image: postgres:16
+    container_name: postgres_db
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
       PGDATA: /data/postgres
-    ports:
-      - "5432:5432"
+    volumes:
+      - ./internal/database/migrations:/docker-entrypoint-initdb.d
     networks:
       - postgres
     restart: unless-stopped
@@ -17,6 +20,5 @@ services:
 networks:
   postgres:
     driver: bridge
-
 volumes:
   postgres:

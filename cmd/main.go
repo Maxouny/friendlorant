@@ -8,35 +8,37 @@ import (
 	"os/signal"
 	"time"
 
-	"friendlorant/db"
 	"friendlorant/internal/config"
+	"friendlorant/internal/controllers"
+	"friendlorant/internal/database"
 	"friendlorant/internal/repositories"
-	routes "friendlorant/internal/routes"
+	"friendlorant/internal/routes"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	cfg := config.LoadConfig()
+	envCfg, err := config.LoadEnvConfig()
+	if err != nil {
+		log.Fatal("Failed to load config: ", err)
+	}
 
-	dbConn, err := db.ConnectDB()
+	dbConn, err := database.ConnectDB()
 	if err != nil {
 		log.Fatal("Failed to connect to database: ", err)
 	}
-	defer dbConn.Close()
-
-	if err := db.Migrate(dbConn); err != nil {
-		log.Fatal("Failed to migrate database: ", err)
-	}
+	defer dbConn.Close(context.Background())
 
 	userRepo := repositories.NewUserRepository(dbConn)
 
+	userController := controllers.NewUserController(userRepo)
+
 	r := gin.Default()
 
-	routes.SetupRouter(r, userRepo)
+	routes.SetupRouter(r, userController)
 
 	server := &http.Server{
-		Addr:    ":" + cfg.Server.Port,
+		Addr:    ":" + envCfg.Port,
 		Handler: r,
 	}
 
@@ -45,7 +47,7 @@ func main() {
 			log.Fatal("Failed to start server: ", err)
 		}
 	}()
-	log.Println("Server started on port " + cfg.Server.Port)
+	log.Println("Server started on port " + envCfg.Port)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
