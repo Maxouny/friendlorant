@@ -7,16 +7,26 @@ import (
 )
 
 func SetupRouter(r *gin.Engine, userController *controllers.UserController) {
-	v1 := r.Group("/api/v1")
+	// main route /api
+	api := r.Group("/api")
 	{
+		// v1 route /api/v1
+		v1 := api.Group("/v1")
+		{
+			setupUserRoutes(v1, userController)
+		}
+	}
+}
 
-		// TODO: getAllusers,
-
-		v1.POST("/register", userController.Register)
-		v1.POST("/login", userController.Login)
-		v1.GET("/user/:id", userController.GetUserByID)
-		v1.GET("/user/email/:email", userController.GetUserByEmail) // Измененный путь
-		v1.PUT("/user/:id", userController.UpdateUser)
-		v1.DELETE("/user/:id", userController.DeleteUser)
+// /api/v1/users
+func setupUserRoutes(v1 *gin.RouterGroup, userController *controllers.UserController) {
+	users := v1.Group("/users")
+	{
+		users.POST("/register", userController.Register)
+		users.POST("/login", userController.Login)
+		users.GET("/user/:id", userController.GetUserByID)
+		users.GET("/user/email/:email", userController.GetUserByEmail)
+		users.PUT("/user/:id", userController.UpdateUser)
+		users.DELETE("/user/:id", userController.DeleteUser)
 	}
 }

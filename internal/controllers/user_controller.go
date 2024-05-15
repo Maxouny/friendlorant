@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"friendlorant/internal/models"
@@ -10,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/jackc/pgx/v5"
 )
 
 type UserController struct {
@@ -31,9 +34,15 @@ func (uc *UserController) Register(c *gin.Context) {
 	}
 
 	// field validation
-	if err := validateUser(&user); err != nil {
+	if err := utils.ValidateUserFields(&user); err != nil {
+		validationError := err.(validator.ValidationErrors)
+		errors := make(map[string]string)
+		for _, vavalidationError := range validationError {
+			errors[vavalidationError.Field()] = vavalidationError.Error()
+		}
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+			"error":  "Invalid user fields",
+			"fields": errors,
 		})
 		return
 	}
@@ -45,6 +54,7 @@ func (uc *UserController) Register(c *gin.Context) {
 		})
 		return
 	}
+
 	user.Password = hashedPassword
 
 	token, err := utils.GenerateToken(user.ID)
@@ -59,9 +69,9 @@ func (uc *UserController) Register(c *gin.Context) {
 
 	user.TokenExpire = time.Now().Add(time.Hour * 24)
 
-	if err := uc.userRepo.CreateUser(c, &user); err != nil {
+	if err := uc.userRepo.CreateUser(c.Request.Context(), &user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to create user",
+			"error": err.Error(),
 		})
 		return
 	}
@@ -79,13 +89,26 @@ func (uc *UserController) Login(c *gin.Context) {
 		return
 	}
 
-	dbUser, err := uc.userRepo.GetUserByEmail(c, user.Email)
+	// if err := utils.ValidateUser(&user); err != nil {
+	// 	validationError := err.(validator.ValidationErrors)
+	// 	errors := make(map[string]string)
+	// 	for _, vavalidationError := range validationError {
+	// 		errors[vavalidationError.Field()] = vavalidationError.Error()
+	// 	}
+	// 	c.JSON(http.StatusBadRequest, gin.H{
+	// 		"error":  "Invalid user fields",
+	// 		"fields": errors,
+	// 	})
+	// 	return
+	// }
+	dbUser, err := uc.userRepo.GetUserByEmail(c.Request.Context(), user.Email)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Invalid email or password",
+			"error": "Invalid email or passwordDB",
 		})
 		return
 	}
+
 	if err := utils.ComparePasswords(dbUser.Password, user.Password); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": "Invalid email or password",
@@ -106,25 +129,145 @@ func (uc *UserController) Login(c *gin.Context) {
 }
 
 func (uc *UserController) GetUserByID(c *gin.Context) {
-	// Реализация обработчика получения пользователя по ID
+	userIDParam := c.Param("id")
+
+	userId, err := strconv.ParseUint(userIDParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid user ID",
+		})
+		return
+	}
+
+	dbUser, err := uc.userRepo.GetUserByID(c.Request.Context(), uint(userId))
+	if err != nil {
+		fmt.Println(err)
+		if err == pgx.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "User not found",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get user",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dbUser)
 }
 
 func (uc *UserController) GetUserByEmail(c *gin.Context) {
-	// Реализация обработчика получения пользователя по email
+	userEmail := c.Param("email")
+	if userEmail == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Email is required",
+		})
+		return
+	}
+	dbUser, err := uc.userRepo.GetUserByEmail(c.Request.Context(), userEmail)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "User not found",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get user",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, dbUser)
 }
 
 func (uc *UserController) UpdateUser(c *gin.Context) {
-	// Реализация обработчика обновления пользователя
+	var user models.User
+
+	// get user id from url
+	userIDParam := c.Param("id")
+	userId, err := strconv.ParseUint(userIDParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid user ID",
+		})
+		return
+	}
+
+	// find user by id
+
+	existUser, err := uc.userRepo.GetUserByID(c.Request.Context(), uint(userId))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get user",
+		})
+		return
+	}
+	// bind request body to user struct
+	if err := c.BindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request payload",
+		})
+		return
+	}
+
+	// validate user struct
+	user.ID = existUser.ID
+
+	if err := utils.ValidateUserFields(&user); err != nil {
+		validationError := err.(validator.ValidationErrors)
+		errors := make(map[string]string)
+		for _, vavalidationError := range validationError {
+			errors[vavalidationError.Field()] = vavalidationError.Error()
+		}
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":  "Invalid user fields",
+			"fields": errors,
+		})
+		return
+	}
+
+	// hash password if password is not empty
+	if user.Password != "" {
+		hashedPassword, err := utils.HashPassword(user.Password)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to hash password",
+			})
+			return
+		}
+		user.Password = hashedPassword
+	} else {
+		user.Password = existUser.Password
+	}
+	// update user
+	if err := uc.userRepo.UpdateUser(c.Request.Context(), &user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to update user",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, user)
 }
 
 func (uc *UserController) DeleteUser(c *gin.Context) {
-	// Реализация обработчика удаления пользователя
-}
-
-func validateUser(user *models.User) error {
-	validate := validator.New()
-	if err := validate.Struct(user); err != nil {
-		return err
+	// get user id from url
+	userIDParam := c.Param("id")
+	userId, err := strconv.ParseUint(userIDParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid user ID",
+		})
+		return
 	}
-	return nil
+
+	// find user by id
+	err = uc.userRepo.DeleteUser(c.Request.Context(), uint(userId))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to delete user",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
 }
