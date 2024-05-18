@@ -237,19 +237,6 @@ func (uc *UserController) UpdateUser(c *gin.Context) {
 	// validate user struct
 	user.ID = existUser.ID
 
-	if err := utils.ValidateUserFields(&user); err != nil {
-		validationError := err.(validator.ValidationErrors)
-		errors := make(map[string]string)
-		for _, vavalidationError := range validationError {
-			errors[vavalidationError.Field()] = vavalidationError.Error()
-		}
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":  "Invalid user fields",
-			"fields": errors,
-		})
-		return
-	}
-
 	// hash password if password is not empty
 	if user.Password != "" {
 		hashedPassword, err := utils.HashPassword(user.Password)
