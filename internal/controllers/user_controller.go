@@ -69,6 +69,9 @@ func (uc *UserController) Register(c *gin.Context) {
 
 	user.TokenExpire = time.Now().Add(time.Hour * 24)
 
+	user.CreatedAt = time.Now().UTC()
+	user.UpdatedAt = user.CreatedAt
+
 	if err := uc.userRepo.CreateUser(c.Request.Context(), &user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -76,7 +79,15 @@ func (uc *UserController) Register(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, user)
+	publickUser := &models.PublickUser{
+		ID:        user.ID,
+		Username:  user.Username,
+		Email:     user.Email,
+		Image:     user.Image,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	}
+	c.JSON(http.StatusCreated, publickUser)
 }
 
 func (uc *UserController) Login(c *gin.Context) {
@@ -88,19 +99,6 @@ func (uc *UserController) Login(c *gin.Context) {
 		})
 		return
 	}
-
-	// if err := utils.ValidateUser(&user); err != nil {
-	// 	validationError := err.(validator.ValidationErrors)
-	// 	errors := make(map[string]string)
-	// 	for _, vavalidationError := range validationError {
-	// 		errors[vavalidationError.Field()] = vavalidationError.Error()
-	// 	}
-	// 	c.JSON(http.StatusBadRequest, gin.H{
-	// 		"error":  "Invalid user fields",
-	// 		"fields": errors,
-	// 	})
-	// 	return
-	// }
 	dbUser, err := uc.userRepo.GetUserByEmail(c.Request.Context(), user.Email)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -125,7 +123,16 @@ func (uc *UserController) Login(c *gin.Context) {
 	}
 
 	dbUser.Token = token
-	c.JSON(http.StatusOK, dbUser)
+
+	publickUser := &models.PublickUser{
+		ID:        dbUser.ID,
+		Username:  dbUser.Username,
+		Email:     dbUser.Email,
+		Image:     dbUser.Image,
+		CreatedAt: dbUser.CreatedAt,
+		UpdatedAt: dbUser.UpdatedAt,
+	}
+	c.JSON(http.StatusOK, publickUser)
 }
 
 func (uc *UserController) GetUserByID(c *gin.Context) {
@@ -153,8 +160,16 @@ func (uc *UserController) GetUserByID(c *gin.Context) {
 		})
 		return
 	}
+	publickUser := &models.PublickUser{
+		ID:        dbUser.ID,
+		Username:  dbUser.Username,
+		Email:     dbUser.Email,
+		Image:     dbUser.Image,
+		CreatedAt: dbUser.CreatedAt,
+		UpdatedAt: dbUser.UpdatedAt,
+	}
 
-	c.JSON(http.StatusOK, dbUser)
+	c.JSON(http.StatusOK, publickUser)
 }
 
 func (uc *UserController) GetUserByEmail(c *gin.Context) {
@@ -178,7 +193,15 @@ func (uc *UserController) GetUserByEmail(c *gin.Context) {
 		})
 		return
 	}
-	c.JSON(http.StatusOK, dbUser)
+	publickUser := &models.PublickUser{
+		ID:        dbUser.ID,
+		Username:  dbUser.Username,
+		Email:     dbUser.Email,
+		Image:     dbUser.Image,
+		CreatedAt: dbUser.CreatedAt,
+		UpdatedAt: dbUser.UpdatedAt,
+	}
+	c.JSON(http.StatusOK, publickUser)
 }
 
 func (uc *UserController) UpdateUser(c *gin.Context) {
@@ -247,7 +270,18 @@ func (uc *UserController) UpdateUser(c *gin.Context) {
 		})
 		return
 	}
-	c.JSON(http.StatusOK, user)
+
+	user.UpdatedAt = time.Now()
+
+	publickUser := &models.PublickUser{
+		ID:        user.ID,
+		Username:  user.Username,
+		Email:     user.Email,
+		Image:     user.Image,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	}
+	c.JSON(http.StatusOK, publickUser)
 }
 
 func (uc *UserController) DeleteUser(c *gin.Context) {
@@ -269,5 +303,37 @@ func (uc *UserController) DeleteUser(c *gin.Context) {
 		})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully", "userId": userId})
+}
+
+func (uc *UserController) GetUserByUsername(c *gin.Context) {
+	userName := c.Param("username")
+	if userName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Username is required",
+		})
+		return
+	}
+	dbUser, err := uc.userRepo.GetUserByUsername(c.Request.Context(), userName)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "User not found",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get user",
+		})
+		return
+	}
+	publickUser := &models.PublickUser{
+		ID:        dbUser.ID,
+		Username:  dbUser.Username,
+		Email:     dbUser.Email,
+		Image:     dbUser.Image,
+		CreatedAt: dbUser.CreatedAt,
+		UpdatedAt: dbUser.UpdatedAt,
+	}
+	c.JSON(http.StatusOK, publickUser)
 }

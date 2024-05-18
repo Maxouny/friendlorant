@@ -26,6 +26,7 @@ func setupUserRoutes(v1 *gin.RouterGroup, userController *controllers.UserContro
 		users.POST("/login", userController.Login)
 		users.GET("/user/:id", userController.GetUserByID)
 		users.GET("/user/email/:email", userController.GetUserByEmail)
+		users.GET("/user/username/:username", userController.GetUserByUsername)
 		users.PUT("/user/:id", userController.UpdateUser)
 		users.DELETE("/user/:id", userController.DeleteUser)
 	}
