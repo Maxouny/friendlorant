@@ -10,44 +10,41 @@ import (
 )
 
 func AuthMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// Get token from header
-		tokenHeader := c.GetHeader("Authorization")
-		if tokenHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Authorization header required",
+	return func(ctx *gin.Context) {
+		authHeader := ctx.GetHeader("Authorization")
+		if authHeader == "" {
+			ctx.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Authorization required",
 			})
-			c.Abort()
+			ctx.Abort()
 			return
 		}
-		// Validate token
-		parts := strings.Split(tokenHeader, " ")
-		if len(parts) != 2 {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Invalid authorization header format",
-			})
-			c.Abort()
-			return
-		}
-		tokenString := parts[1]
-		token, err := utils.ParseToken(tokenString)
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
+		token := strings.TrimSpace(strings.Replace(authHeader, "Bearer", "", 1))
+		if token == "" {
+			ctx.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Invalid token",
 			})
-			c.Abort()
+			ctx.Abort()
 			return
 		}
-		// Get user id from token
-		if claims, ok := token.Claims.(*utils.JWTClaims); ok && token.Valid {
-			c.Set("userID", claims.UserID)
-			c.Next()
-		} else {
-			c.JSON(http.StatusUnauthorized, gin.H{
+		parsedToken, err := utils.ParseToken(token)
+
+		if err != nil || !parsedToken.Valid {
+			ctx.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Invalid token",
 			})
-			c.Abort()
+			ctx.Abort()
 			return
 		}
+		claims, ok := parsedToken.Claims.(*utils.JWTClaims)
+		if !ok || !parsedToken.Valid {
+			ctx.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Invalid token claims",
+			})
+			ctx.Abort()
+			return
+		}
+		ctx.Set("id", claims.UserID)
+		ctx.Next()
 	}
 }
