@@ -13,6 +13,7 @@ import (
 	"friendlorant/internal/database"
 	"friendlorant/internal/repositories"
 	"friendlorant/internal/routes"
+	"friendlorant/internal/socket"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,6 +37,9 @@ func main() {
 	r := gin.Default()
 
 	routes.SetupRouter(r, userController)
+
+	// socket routine
+	go socket.HandleMessage()
 
 	server := &http.Server{
 		Addr:    ":" + envCfg.Port,

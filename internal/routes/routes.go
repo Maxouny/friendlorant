@@ -2,6 +2,7 @@ package routes
 
 import (
 	"friendlorant/internal/controllers"
+	"friendlorant/internal/socket"
 
 	"github.com/gin-gonic/gin"
 )
@@ -29,5 +30,7 @@ func setupUserRoutes(v1 *gin.RouterGroup, userController *controllers.UserContro
 		users.GET("/user/username/:username", userController.GetUserByUsername)
 		users.PUT("/user/:id", userController.UpdateUser)
 		users.DELETE("/user/:id", userController.DeleteUser)
+		// socket
+		users.GET("/ws", func(ctx *gin.Context) { socket.HandleConnections(ctx.Writer, ctx.Request) })
 	}
 }
