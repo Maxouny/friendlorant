@@ -2,7 +2,6 @@ package routes
 
 import (
 	"friendlorant/internal/controllers"
-	"friendlorant/internal/middleware"
 	"friendlorant/internal/socket"
 
 	"github.com/gin-gonic/gin"
@@ -10,7 +9,7 @@ import (
 
 func SetupRouter(r *gin.Engine, userController *controllers.UserController) {
 	// main route /api
-	r.Use(middleware.AuthMiddleware())
+	// r.Use(middleware.AuthMiddleware())
 	api := r.Group("/api")
 	{
 		// v1 route /api/v1
@@ -30,6 +29,7 @@ func setupUserRoutes(v1 *gin.RouterGroup, userController *controllers.UserContro
 		users.GET("/user/:id", userController.GetUserByID)
 		users.GET("/user/email/:email", userController.GetUserByEmail)
 		users.GET("/user/username/:username", userController.GetUserByUsername)
+		users.GET("/", userController.GetUsers)
 		users.PUT("/user/:id", userController.UpdateUser)
 		users.DELETE("/user/:id", userController.DeleteUser)
 		// socket

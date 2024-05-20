@@ -324,3 +324,14 @@ func (uc *UserController) GetUserByUsername(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, publickUser)
 }
+
+func (uc *UserController) GetUsers(c *gin.Context) {
+	publickUser, err := uc.userRepo.GetUsers(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("failed to get users: %v", err),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, publickUser)
+}

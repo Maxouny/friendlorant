@@ -16,6 +16,7 @@ type UserRepository interface {
 	GetUserByID(ctx context.Context, id uint) (*models.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	GetUserByUsername(ctx context.Context, username string) (*models.User, error)
+	GetUsers(ctx context.Context) ([]models.PublickUser, error)
 	UpdateUser(ctx context.Context, user *models.User) error
 	DeleteUser(ctx context.Context, id uint) error
 }
@@ -102,4 +103,28 @@ func (ur *userRepository) DeleteUser(ctx context.Context, id uint) error {
 		return err
 	}
 	return nil
+}
+
+func (ur *userRepository) GetUsers(ctx context.Context) ([]models.PublickUser, error) {
+	query := `SELECT id, username, email, created_at, updated_at, image FROM users`
+	rows, err := ur.pgx.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query users: %v", err)
+	}
+	defer rows.Close()
+
+	var users []models.PublickUser
+	for rows.Next() {
+		var user models.PublickUser
+		if err := rows.Scan(&user.ID, &user.Username, &user.Email, &user.CreatedAt, &user.UpdatedAt, &user.Image); err != nil {
+			return nil, fmt.Errorf("failed to scan user: %v", err)
+		}
+		users = append(users, user)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("row iteration error: %v", err)
+	}
+
+	return users, nil
 }
