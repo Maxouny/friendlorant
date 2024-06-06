@@ -47,6 +47,7 @@ require (
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-gonic/gin v1.10.0
 	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/ilyakaznacheev/cleanenv v1.5.0

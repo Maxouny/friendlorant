@@ -1,5 +1,22 @@
 package middleware
 
+import (
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+)
+
+func AuthMiddleware() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		r := gin.Default()
+
+		corsConfig := cors.DefaultConfig()
+		corsConfig.AllowHeaders = []string{"Accept"}
+		corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE"}
+
+		r.Use(cors.New(corsConfig))
+	}
+}
+
 // func AuthMiddleware() gin.HandlerFunc {
 // 	return func(ctx *gin.Context) {
 // 		authHeader := ctx.GetHeader("Authorization")
