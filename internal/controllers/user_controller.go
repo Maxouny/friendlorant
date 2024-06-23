@@ -100,12 +100,6 @@ func (uc *UserController) Login(c *gin.Context) {
 		return
 	}
 	dbUser, err := uc.userRepo.GetUserByEmail(c.Request.Context(), user.Email)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Invalid email or passwordDB",
-		})
-		return
-	}
 
 	if err := utils.ComparePasswords(dbUser.Password, user.Password); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{

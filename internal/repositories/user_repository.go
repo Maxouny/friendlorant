@@ -35,7 +35,8 @@ func (ur *userRepository) CreateUser(ctx context.Context, user *models.User) err
 	query := `INSERT INTO users
 	(username, email, password, token, image, valorant_id, user_rating, token_expire, created_at, updated_at)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`
-	err := ur.pgx.QueryRow(ctx, query, user.Username, user.Email, &user.Password, user.Token, user.Image, user.ValorantID, user.UserRating, user.TokenExpire, user.CreatedAt, user.UpdatedAt).
+	err := ur.pgx.QueryRow(ctx, query, user.Username, user.Email, &user.Password, user.Token,
+		user.Image, user.ValorantID, user.UserRating, user.TokenExpire, user.CreatedAt, user.UpdatedAt).
 		Scan(&user.ID)
 	if err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
@@ -57,7 +58,8 @@ func (ur *userRepository) GetUserByID(ctx context.Context, id uint) (*models.Use
 
 	query := `SELECT id, username, email, password, image, valorant_id, user_rating, token, token_expire, created_at, updated_at FROM users WHERE id = $1`
 	err := ur.pgx.QueryRow(ctx, query, id).
-		Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Image, &user.ValorantID, &user.UserRating, &user.Token, &user.TokenExpire, &user.CreatedAt, &user.UpdatedAt)
+		Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Image, &user.ValorantID,
+			&user.UserRating, &user.Token, &user.TokenExpire, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to scan user: %v", err)
 	}
@@ -69,7 +71,8 @@ func (ur *userRepository) GetUserByEmail(ctx context.Context, email string) (*mo
 	var user models.User
 	query := `SELECT id, username, email, password, image, valorant_id, user_rating, token, token_expire, created_at, updated_at FROM users WHERE email = $1`
 	err := ur.pgx.QueryRow(ctx, query, email).
-		Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Image, &user.ValorantID, &user.UserRating, &user.Token, &user.TokenExpire, &user.CreatedAt, &user.UpdatedAt)
+		Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Image, &user.ValorantID,
+			&user.UserRating, &user.Token, &user.TokenExpire, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +83,8 @@ func (ur *userRepository) GetUserByUsername(ctx context.Context, username string
 	var user models.User
 	query := `SELECT id, username, email, password, image, valorant_id, user_rating, token, token_expire, created_at, updated_at FROM users WHERE username = $1`
 	err := ur.pgx.QueryRow(ctx, query, username).
-		Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Image, &user.ValorantID, &user.UserRating, &user.Token, &user.TokenExpire, &user.CreatedAt, &user.UpdatedAt)
+		Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Image, &user.ValorantID,
+			&user.UserRating, &user.Token, &user.TokenExpire, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +93,8 @@ func (ur *userRepository) GetUserByUsername(ctx context.Context, username string
 
 func (ur *userRepository) UpdateUser(ctx context.Context, user *models.User) error {
 	query := `UPDATE users SET username = $1, email = $2, password = $3, image = $4, valorant_id = $5, user_rating = $6, token_expire = $7, updated_at = $8 WHERE id = $9`
-	_, err := ur.pgx.Exec(ctx, query, user.Username, user.Email, &user.Password, user.Image, user.ValorantID, user.UserRating, user.TokenExpire, user.UpdatedAt, user.ID)
+	_, err := ur.pgx.Exec(ctx, query, user.Username, user.Email, &user.Password, user.Image,
+		user.ValorantID, user.UserRating, user.TokenExpire, user.UpdatedAt, user.ID)
 	if err != nil {
 		return err
 	}
@@ -116,7 +121,8 @@ func (ur *userRepository) GetUsers(ctx context.Context) ([]models.PublickUser, e
 	var users []models.PublickUser
 	for rows.Next() {
 		var user models.PublickUser
-		if err := rows.Scan(&user.ID, &user.Username, &user.Email, &user.CreatedAt, &user.UpdatedAt, &user.Image); err != nil {
+		if err := rows.Scan(&user.ID, &user.Username, &user.Email, &user.CreatedAt,
+			&user.UpdatedAt, &user.Image); err != nil {
 			return nil, fmt.Errorf("failed to scan user: %v", err)
 		}
 		users = append(users, user)
